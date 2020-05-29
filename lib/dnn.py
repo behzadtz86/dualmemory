@@ -7,6 +7,7 @@ import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.callbacks import Callback
+from tensorflow.python.keras.layers import BatchNormalization
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 
 logging.basicConfig(level=logging.INFO)
@@ -18,16 +19,26 @@ class Dnn:
         self.class_num = class_num
         self.input_size = input_size
         self.model = Sequential()
+        self.model.add(BatchNormalization())
         self.model.add(
             Dense(
-                200, input_dim=100,
+                input_size * 2, input_dim=input_size,
                 activation='relu',
                 kernel_initializer='uniform'
             )
         )
+        self.model.add(BatchNormalization())
         self.model.add(
             Dense(
-                class_num, input_dim=200,
+                input_size, input_dim=input_size * 2,
+                activation='relu',
+                kernel_initializer='uniform'
+            )
+        )
+        self.model.add(BatchNormalization())
+        self.model.add(
+            Dense(
+                class_num, input_dim=input_size,
                 activation='softmax',
                 kernel_initializer='uniform'
             )
