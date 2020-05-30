@@ -6,9 +6,9 @@
 #### Running the Script:
 `python3 main.py <options>`
 
-example 1: `python3 main.py --x 10 --y 10 --d1 0,1,2,3,4 --d2 5,6,7,8,9,0 --plot_som --limit 200`
+example 1: `python3 main.py --x 10 --y 10 --d1 0,1,2,3,4 --d2 5,6,7,8,9,0 --plot_som --limit 1000 --stm 100`
 
-example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.5 --lr 0.5,0.01 --image_path ~/plots`
+example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.0 --lr 0.5,0.1 --image_path ~/plots`
 
 <table>
 <thead>
@@ -25,7 +25,6 @@ example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.5 --lr 0.5,0.
   <td>The size of batches</td>
 </tr>
  
-
 <tr>
   <td>--x</td>
   <td>int (default=10)</td>
@@ -39,9 +38,9 @@ example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.5 --lr 0.5,0.
 </tr>
 
 <tr>
-  <td>--dnn_epoch</td>
+  <td>--dnn_iter</td>
   <td>str (default='1,1,1,1,1')</td>
- <td>Number of DNN epochs in each sub-task (separated by ',').</td>
+ <td>Number of DNN iterations in each batch (separated for tasks by ',').</td>
 </tr>
 
 <tr>
@@ -82,13 +81,13 @@ example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.5 --lr 0.5,0.
 
 <tr>
   <td>--radius</td>
-  <td>str (default='5.0,0.5,0.5,0.5,0.5')</td>
+  <td>str (default='2.5,0.75,0.75,0.75,0.75')</td>
   <td>The initial radius of SOM training in each sub-task (separated by ',').</td>
 </tr>
 
 <tr>
-  <td>lr</td>
-  <td>str (default='1,0.01,0.01,0.01,0.01')</td>
+  <td>--lr</td>
+  <td>str (default='0.5,0.1,0.1,0.1,0.1')</td>
   <td>The initial learning-rate of SOM training in each sub-task (separated by ',').</td>
 </tr>
 
@@ -97,6 +96,7 @@ example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.5 --lr 0.5,0.
   <td>str (default=None)</td>
   <td>The folder path For saving the PNG/PDF plots</td>
 </tr>
+
 
 <tr>
   <td>--plot_som</td>
