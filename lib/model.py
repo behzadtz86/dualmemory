@@ -12,6 +12,7 @@ from lib.bqueue import Bqueue
 from lib.dnn import Dnn
 from lib.helper import Helper
 from lib.som import SOM
+from sklearn.preprocessing import quantile_transform
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Model")
@@ -37,7 +38,12 @@ class Model:
         self.scaler = StandardScaler()
 
     def transfer(self, dist):
-        return self.scaler.fit_transform(dist)
+        z = quantile_transform(
+            dist, axis=1,
+            n_quantiles=self.som_x * self.som_y,
+            output_distribution='normal'
+        )
+        return z
 
     @staticmethod
     def flatten(samples):
@@ -71,7 +77,7 @@ class Model:
         logger.info("\rFilling STM")
         loss, _ = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
         loss = np.array(loss).astype("float32")
-        stm_idx = np.argwhere(loss > 0.5).ravel()
+        stm_idx = np.argwhere(loss > 0.1).ravel()
         if stm_idx.shape[0] == 0:
             wrong_samples, wrong_labels = Helper.get_random_samples(samples, labels, self.limit)
         else:

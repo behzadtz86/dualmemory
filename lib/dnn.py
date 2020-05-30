@@ -9,6 +9,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.callbacks import Callback
 from tensorflow.python.keras.layers import BatchNormalization
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
+from tensorflow.python.keras.optimizer_v2.rmsprop import RMSProp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DNN")
@@ -44,7 +45,7 @@ class Dnn:
             )
         )
         self.model.compile(
-            optimizer=SGD(lr=0.01),
+            optimizer=RMSProp(lr=0.001),
             loss="categorical_crossentropy",
             metrics=["accuracy"]
         )

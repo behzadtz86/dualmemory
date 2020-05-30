@@ -27,9 +27,9 @@ parser.add_option("--radius", dest="radius",
 parser.add_option("--lr", dest="lr",
                   help="Initial learning rate of SOM training.",
                   default='0.5,0.02,0.02,0.02,0.02 ', type=str)
-parser.add_option("--dnn_epoch", dest="dnn_epoch",
-                  help="DNN epoch for each sub-task.",
-                  default='100,100,100,100,100', type=str)
+parser.add_option("--dnn_iter", dest="dnn_iter",
+                  help="DNN iteration for each batch.",
+                  default='1,1,1,1,1', type=str)
 parser.add_option("--d1", dest="d1",
                   help="The list of samples to train in part 1.", default=None, type=str)
 parser.add_option("--d2", dest="d2",
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     )
     input_dim = train_images.shape[1] * train_images.shape[2]
     class_num = train_labels.shape[1]
-    di = [int(l) for l in options.dnn_epoch.split(',')]
+    di = [int(l) for l in options.dnn_iter.split(',')]
     rad = [float(l) for l in options.radius.split(',')]
     lr = [float(l) for l in options.lr.split(',')]
     x_test, t_test = Helper.get_random_samples(
@@ -102,6 +102,8 @@ if __name__ == "__main__":
             else:
                 samples_so_far = sub_set['samples']
                 labels_so_far = sub_set['labels']
+
+            # ======================== Train =========================
             accuracy, c_sigma, c_matrices = model.train(
                 Model.flatten(sub_set['samples']), sub_set['labels'], di[num], lr[num],
                 rad[num], options.ce, num + 1
