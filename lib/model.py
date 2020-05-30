@@ -12,7 +12,6 @@ from lib.bqueue import Bqueue
 from lib.dnn import Dnn
 from lib.helper import Helper
 from lib.som import SOM
-from sklearn.preprocessing import quantile_transform
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Model")
@@ -38,12 +37,7 @@ class Model:
         self.scaler = StandardScaler()
 
     def transfer(self, dist):
-        z = quantile_transform(
-            dist, axis=1,
-            n_quantiles=self.som_x * self.som_y,
-            output_distribution='normal'
-        )
-        return z
+        return self.scaler.fit_transform(dist)
 
     @staticmethod
     def flatten(samples):
@@ -55,7 +49,7 @@ class Model:
         stm_samples = np.array([s[0] for s in self.stm.get_list()]).astype("float32")
         stm_labels = np.array([s[1] for s in self.stm.get_list()]).astype("float32")
         if stm_samples.shape[0] > 0:
-            for i in trange(self.class_num, desc="Mimicking Data"):
+            for i in trange(self.class_num, desc="Replying Data"):
                 class_stm_idx = np.argwhere(np.argmax(stm_labels, axis=1) == i).ravel()
                 if class_stm_idx.shape[0] == 0:
                     break
@@ -107,10 +101,10 @@ class Model:
         x, t = Helper.generate_batches(samples, labels, self.batch_size)
         sigma = []
         confusion_matrices = []
-        cm_list = [0, len(x) // 2, len(x) - 1]
+        cm_list = [0, len(x) // 2]
         pbar = trange(len(x))
         for i in pbar:
-            decay = exp(-1 * ((5 / sub_task) * i / len(x)))
+            decay = exp(-1 * (5 * i / len(x)))
             sigma.append(som_rad * decay)
             z_som = self.transfer(self.som.get_distances(x[i]))
             loss, acc = self.dnn.evaluate(z_som, t[i], verbose=0)
@@ -139,9 +133,14 @@ class Model:
                 f"Batch:{i + 1}/{len(x)}|Train Acc.:{d_acc:.4f}"
             )
             pbar.refresh()
-
+        logger.info("\rFinal DNN Training & Evaluation...")
         z_som_test = self.transfer(self.som.get_distances(self.x_test, batch_size=self.batch_size))
         z_som_stm = self.transfer(self.som.get_distances(samples, batch_size=self.batch_size))
+        _, _, confusion_matrix = self.dnn.train(
+            z_som_stm, labels, z_som_test, self.t_test,
+            cm=True, epoch=10, batch_size=self.batch_size
+        )
+        confusion_matrices.append(confusion_matrix[0])
         loss, accuracy = self.dnn.evaluate(z_som_test, self.t_test, verbose=1)
         self.fill_stm(samples, z_som_stm, labels)
         return accuracy, np.array(sigma), confusion_matrices
