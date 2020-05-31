@@ -138,7 +138,7 @@ class Model:
         z_som_stm = self.transfer(self.som.get_distances(samples, batch_size=self.batch_size))
         _, _, confusion_matrix = self.dnn.train(
             z_som_stm, labels, z_som_test, self.t_test,
-            cm=True, epoch=10, batch_size=self.batch_size
+            cm=True, epoch=dnn_iter, batch_size=self.batch_size
         )
         confusion_matrices.append(confusion_matrix[0])
         loss, accuracy = self.dnn.evaluate(z_som_test, self.t_test, verbose=1)
