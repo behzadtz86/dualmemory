@@ -101,7 +101,8 @@ class Model:
         x, t = Helper.generate_batches(samples, labels, self.batch_size)
         sigma = []
         confusion_matrices = []
-        cm_list = [0, len(x) // 2]
+        # cm_list = range(len(x))
+        cm = []
         pbar = trange(len(x))
         for i in pbar:
             decay = exp(-1 * (5 * i / len(x)))

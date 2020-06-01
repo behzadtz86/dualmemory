@@ -123,8 +123,9 @@ if __name__ == "__main__":
         # ================== Plotting Sigma Decay ====================
         Plotter.plot_sigma(sigma)
         # ============== Plotting Confusion Matrices =================
-        for cm in confusion_matrices:
-            Plotter.plot_cm(cm)
+        # for cm in confusion_matrices:
+        #     Plotter.plot_cm(cm)
+        # Plotter.plot_cm_diagram(confusion_matrices, [0, 2, 4, 6, 8])
         # ===================== Plotting SOM's =======================
         if options.plot_som:
             # Plotter(28, 28).plot_som_changes(soms, som_samples, som_labels)

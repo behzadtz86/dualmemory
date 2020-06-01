@@ -231,6 +231,26 @@ class Plotter:
         return plt
 
     @staticmethod
+    def plot_cm_diagram(cm_list, classes=None):
+        plt.rcParams.update({'font.size': 18})
+        if classes is None:
+            classes = range(10)
+        fig, ax = plt.subplots()
+        ax.grid(True)
+        corrects = []
+        for cm in cm_list:
+            corrects.append(cm[1].diagonal())
+        corrects = np.array(corrects).astype("int32")
+        legends = []
+        for c in classes:
+            ax.plot(corrects[:, c], linewidth=3)
+            legends.append(f"Class {c}")
+        ax.set_xlabel('Batch Number')
+        ax.set_ylabel('Correct Predicts')
+        ax.legend(legends)
+        return plt
+
+    @staticmethod
     def plot_sigma(sigma_list):
         fig, ax = plt.subplots()
         legends = []
