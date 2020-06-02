@@ -102,7 +102,7 @@ class Model:
         sigma = []
         confusion_matrices = []
         # cm_list = range(len(x))
-        cm = []
+        cm_list = []
         pbar = trange(len(x))
         for i in pbar:
             decay = exp(-1 * (5 * i / len(x)))
