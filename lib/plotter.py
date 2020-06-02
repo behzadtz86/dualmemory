@@ -10,7 +10,7 @@ import numpy as np
 from cv2 import cv2
 from mpl_toolkits.axes_grid1 import ImageGrid
 import traceback
-
+from scipy import interpolate
 from lib.som import SOM
 
 logging.basicConfig(level=logging.INFO)
@@ -232,7 +232,7 @@ class Plotter:
 
     @staticmethod
     def plot_cm_diagram(cm_list, classes=None):
-        plt.rcParams.update({'font.size': 18})
+        plt.rcParams.update({'font.size': 15})
         if classes is None:
             classes = range(10)
         fig, ax = plt.subplots()
@@ -241,13 +241,18 @@ class Plotter:
         for cm in cm_list:
             corrects.append(cm[1].diagonal())
         corrects = np.array(corrects).astype("int32")
-        legends = []
-        for c in classes:
-            ax.plot(corrects[:, c], linewidth=3)
-            legends.append(f"Class {c}")
+        x = list(range(0, corrects.shape[0], 10))
+        x.append(corrects.shape[0] - 1)
+        x = np.array(x).astype("int32")
+        for s in classes:
+            y = corrects[:, s][x]
+            t, c, k = interpolate.splrep(x, y, s=0, k=4)
+            x_smooth = np.linspace(x.min(), x.max(), 100)
+            spline = interpolate.BSpline(t, c, k, extrapolate=False)
+            plt.plot(x_smooth, spline(x_smooth), linewidth=3, label=f"Class {s}")
         ax.set_xlabel('Batch Number')
         ax.set_ylabel('Correct Predicts')
-        ax.legend(legends)
+        ax.legend()
         return plt
 
     @staticmethod
