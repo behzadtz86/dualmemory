@@ -19,23 +19,6 @@ class Dnn:
         self.class_num = class_num
         self.input_size = input_size
         self.model = Sequential()
-        self.model.add(BatchNormalization())
-        self.model.add(
-            Dense(
-                input_size * 2, input_dim=input_size,
-                activation='relu',
-                kernel_initializer='uniform'
-            )
-        )
-        self.model.add(BatchNormalization())
-        self.model.add(
-            Dense(
-                input_size, input_dim=input_size * 2,
-                activation='relu',
-                kernel_initializer='uniform'
-            )
-        )
-        self.model.add(BatchNormalization())
         self.model.add(
             Dense(
                 class_num, input_dim=input_size,

@@ -5,7 +5,7 @@ import logging
 import shutil
 from math import exp
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, minmax_scale
 from sklearn.utils import shuffle
 from tqdm import trange
 from lib.bqueue import Bqueue
@@ -36,14 +36,10 @@ class Model:
         self.t_test = tt
         self.stm = Bqueue(max_size=stm)
         self.limit = limit
-        self.k = 0.0
+        self.scaler = StandardScaler()
 
-    def transfer(self, dist, t=0.001):
-        k = (1 - t) * self.k + t * np.max(dist)
-        if np.max(dist) > self.k:
-            self.k = np.max(dist)
-        gk = norm.pdf(dist, 0, k)
-        return gk
+    def transfer(self, dist):
+        return self.scaler.fit_transform(dist)
 
     @staticmethod
     def flatten(samples):
@@ -55,7 +51,7 @@ class Model:
         stm_samples = np.array([s[0] for s in self.stm.get_list()]).astype("float32")
         stm_labels = np.array([s[1] for s in self.stm.get_list()]).astype("float32")
         if stm_samples.shape[0] > 0:
-            for i in trange(self.class_num, desc="Replying Data"):
+            for i in trange(self.class_num, desc="Replaying Data"):
                 class_stm_idx = np.argwhere(np.argmax(stm_labels, axis=1) == i).ravel()
                 if class_stm_idx.shape[0] == 0:
                     break
@@ -102,16 +98,18 @@ class Model:
         sigma = []
         r_samples = None
         r_labels = None
+        d_acc = 0.0
+        if sub_task > 1 and self.stm.max_size > 0:
+            m_samples, m_labels = self.reply()
+            if m_samples is not None:
+                r_samples = np.concatenate((samples, m_samples))
+                r_labels = np.concatenate((labels, m_labels))
+                r_samples, r_labels = shuffle(r_samples, r_labels)
+        else:
+            r_samples = samples
+            r_labels = labels
+
         for ep, e in enumerate(range(epoch)):
-            if sub_task > 1 and self.stm.max_size > 0:
-                m_samples, m_labels = self.reply()
-                if m_samples is not None:
-                    r_samples = np.concatenate((samples, m_samples))
-                    r_labels = np.concatenate((labels, m_labels))
-                    r_samples, r_labels = shuffle(r_samples, r_labels)
-            else:
-                r_samples = samples
-                r_labels = labels
             new_labels = np.unique(np.argmax(labels, axis=1))
             x, t = Helper.generate_batches(r_samples, r_labels, self.batch_size)
             sigma = []
@@ -128,9 +126,9 @@ class Model:
                 wrong_idx = np.argwhere(np.greater(np.array(loss), ce)).ravel()
                 if wrong_idx.shape[0] > 0:
                     mask = np.isin(np.argmax(t[i][wrong_idx], axis=1), new_labels)
-                    wrong_samples = x[i][wrong_idx][mask]
+                    new_wrong_samples = np.repeat(x[i][wrong_idx][mask], 5, axis=0)
                     self.som.train(
-                        wrong_samples, learning_rate=som_lr * decay,
+                        new_wrong_samples, learning_rate=som_lr * decay,
                         radius=som_rad * decay, global_order=self.batch_size
                     )
                 z_som = self.transfer(self.som.get_distances(x[i], batch_size=self.batch_size))
