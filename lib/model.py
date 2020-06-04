@@ -5,15 +5,13 @@ import logging
 import shutil
 from math import exp
 import numpy as np
-from sklearn.preprocessing import StandardScaler, minmax_scale
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
 from tqdm import trange
 from lib.bqueue import Bqueue
 from lib.dnn import Dnn
 from lib.helper import Helper
 from lib.som import SOM
-import matplotlib.pyplot as plt
-from scipy.stats import norm
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Model")
@@ -98,7 +96,6 @@ class Model:
         sigma = []
         r_samples = None
         r_labels = None
-        d_acc = 0.0
         if sub_task > 1 and self.stm.max_size > 0:
             m_samples, m_labels = self.reply()
             if m_samples is not None:
@@ -115,7 +112,7 @@ class Model:
             sigma = []
             confusion_matrices = []
             # cm_list = range(len(x))
-            cm_list = []
+            cm_list = [0, len(x) - 1]
             pbar = trange(len(x))
             for i in pbar:
                 decay = exp(-1 * ((10 / sub_task) * i / len(x)))
@@ -127,6 +124,7 @@ class Model:
                 if wrong_idx.shape[0] > 0:
                     mask = np.isin(np.argmax(t[i][wrong_idx], axis=1), new_labels)
                     new_wrong_samples = np.repeat(x[i][wrong_idx][mask], 5, axis=0)
+                    # wrong_samples = x[i][wrong_idx]
                     self.som.train(
                         new_wrong_samples, learning_rate=som_lr * decay,
                         radius=som_rad * decay, global_order=self.batch_size
@@ -138,24 +136,27 @@ class Model:
                 cm = i in cm_list and sub_task > 1
                 d_loss, d_acc, confusion_matrix = self.dnn.train(
                     z_som, t[i], z_som_test, self.t_test,
-                    cm=cm, epoch=1, batch_size=self.batch_size
+                    cm=cm, epoch=dnn_iter, batch_size=self.batch_size
                 )
                 if len(confusion_matrix) > 0:
                     for m in confusion_matrix:
                         confusion_matrices.append(m)
                 d_acc = np.mean(np.array(d_acc).astype("float32"))
                 pbar.set_description(
-                    f"Epoch{ep + 1}/{epoch}|Batch:{i + 1}/{len(x)}|CE:{wrong_idx.shape[0]}/{x[i].shape[0]}|Train Acc.:{d_acc:.4f}"
+                    f"Epoch{ep + 1}/{epoch}"
+                    f"|Batch:{i + 1}/{len(x)}"
+                    f"|CE:{wrong_idx.shape[0]}/{x[i].shape[0]}"
+                    f"|Train Acc.:{d_acc:.4f}"
                 )
                 pbar.refresh()
         logger.info("\rEvaluation...")
         z_som_test = self.transfer(self.som.get_distances(self.x_test, batch_size=self.batch_size))
         z_som_stm = self.transfer(self.som.get_distances(r_samples, batch_size=self.batch_size))
-        _, _, confusion_matrix = self.dnn.train(
-            z_som_stm, r_labels, z_som_test, self.t_test,
-            cm=True, epoch=dnn_iter, batch_size=self.batch_size
-        )
-        confusion_matrices.append(confusion_matrix[0])
+        # _, _, confusion_matrix = self.dnn.train(
+        #     z_som_stm, r_labels, z_som_test, self.t_test,
+        #     cm=True, epoch=dnn_iter, batch_size=self.batch_size
+        # )
+        # confusion_matrices.append(confusion_matrix[0])
         loss, accuracy = self.dnn.evaluate(z_som_test, self.t_test, verbose=1)
         if self.stm.max_size > 0:
             self.fill_stm(r_samples, z_som_stm, r_labels)
