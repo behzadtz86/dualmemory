@@ -2,6 +2,7 @@ __author__ = "Behzad Taghipour Zarfsaz"
 __email__ = "behzad.taghipour-zarfsaz@informatik.hs-fulda.de"
 
 import copy
+import json
 import logging
 from optparse import OptionParser
 from lib.model import Model
@@ -148,6 +149,8 @@ if __name__ == "__main__":
             for i in plt.get_fignums():
                 pl = plt.figure(i)
                 Plotter.save_plot(pl, options.img_path, f"plot{i}", "pdf")
+                with open(os.path.join(options.img_path, 'params.txt'), 'w') as f:
+                    f.write(json.dumps(options_dict, indent=2))
         else:
             for i in plt.get_fignums():
                 pl = plt.figure(i)
