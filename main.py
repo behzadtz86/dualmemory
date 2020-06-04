@@ -30,6 +30,9 @@ parser.add_option("--lr", dest="lr",
 parser.add_option("--dnn_iter", dest="dnn_iter",
                   help="DNN iteration for each batch.",
                   default='1,1,1,1,1', type=str)
+parser.add_option("--epoch", dest="epoch",
+                  help="Epoch for each sub-task.",
+                  default='1,1,1,1,1', type=str)
 parser.add_option("--d1", dest="d1",
                   help="The list of samples to train in part 1.", default=None, type=str)
 parser.add_option("--d2", dest="d2",
@@ -65,6 +68,7 @@ if __name__ == "__main__":
     input_dim = train_images.shape[1] * train_images.shape[2]
     class_num = train_labels.shape[1]
     di = [int(l) for l in options.dnn_iter.split(',')]
+    epochs = [int(l) for l in options.epoch.split(',')]
     rad = [float(l) for l in options.radius.split(',')]
     lr = [float(l) for l in options.lr.split(',')]
     x_test, t_test = Helper.get_random_samples(
@@ -106,7 +110,7 @@ if __name__ == "__main__":
             # ======================== Train =========================
             accuracy, c_sigma, c_matrices = model.train(
                 Model.flatten(sub_set['samples']), sub_set['labels'], di[num], lr[num],
-                rad[num], options.ce, num + 1
+                rad[num], options.ce, num + 1, epochs[num]
             )
 
             # ================ Collecting Plot Data =================
@@ -123,8 +127,8 @@ if __name__ == "__main__":
         # ================== Plotting Sigma Decay ====================
         Plotter.plot_sigma(sigma)
         # ============== Plotting Confusion Matrices =================
-        # for cm in confusion_matrices:
-        #     Plotter.plot_cm(cm)
+        for cm in confusion_matrices:
+            Plotter.plot_cm(cm)
         # Plotter.plot_cm_diagram(confusion_matrices, [0, 2, 4, 6, 8])
         # ===================== Plotting SOM's =======================
         if options.plot_som:

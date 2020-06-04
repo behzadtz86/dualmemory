@@ -30,15 +30,7 @@ class Dnn:
         self.model.add(BatchNormalization())
         self.model.add(
             Dense(
-                input_size, input_dim=input_size * 2,
-                activation='relu',
-                kernel_initializer='uniform'
-            )
-        )
-        self.model.add(BatchNormalization())
-        self.model.add(
-            Dense(
-                class_num, input_dim=input_size,
+                class_num, input_dim=input_size * 2,
                 activation='softmax',
                 kernel_initializer='uniform'
             )
