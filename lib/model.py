@@ -69,20 +69,22 @@ class Model:
 
     def fill_stm(self, samples, z_som, labels):
         logger.info("\rFilling STM")
-        loss, _ = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
-        loss = np.array(loss).astype("float32")
-        stm_idx = np.argwhere(loss > 0.001).ravel()
+        loss, acc = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
+        acc = np.array(acc).astype("float32")
+        stm_idx = np.argwhere(acc > 0.9).ravel()
         if stm_idx.shape[0] == 0:
-            wrong_samples, wrong_labels = Helper.get_random_samples(samples, labels, self.limit)
+            correct_samples, correct_labels = Helper.get_random_samples(
+                samples, labels, self.limit
+            )
         else:
-            wrong_samples = samples[stm_idx]
-            wrong_labels = labels[stm_idx]
+            correct_samples = samples[stm_idx]
+            correct_labels = labels[stm_idx]
         for s in range(self.class_num):
-            class_idx = np.argwhere(np.argmax(wrong_labels, axis=1) == s).ravel()
+            class_idx = np.argwhere(np.argmax(correct_labels, axis=1) == s).ravel()
             loop_iter = min(self.stm.max_size // self.class_num, class_idx.shape[0])
             for i in range(loop_iter):
                 self.stm.push(
-                    (wrong_samples[class_idx[i]], wrong_labels[class_idx[i]])
+                    (correct_samples[class_idx[i]], correct_labels[class_idx[i]])
                 )
 
     def train(
@@ -124,7 +126,6 @@ class Model:
                 if wrong_idx.shape[0] > 0:
                     mask = np.isin(np.argmax(t[i][wrong_idx], axis=1), new_labels)
                     new_wrong_samples = np.repeat(x[i][wrong_idx][mask], 5, axis=0)
-                    # wrong_samples = x[i][wrong_idx]
                     self.som.train(
                         new_wrong_samples, learning_rate=som_lr * decay,
                         radius=som_rad * decay, global_order=self.batch_size
@@ -133,7 +134,7 @@ class Model:
                 z_som_test = self.transfer(
                     self.som.get_distances(self.x_test, batch_size=self.batch_size)
                 )
-                cm = i in cm_list and sub_task > 1
+                cm = i in cm_list
                 d_loss, d_acc, confusion_matrix = self.dnn.train(
                     z_som, t[i], z_som_test, self.t_test,
                     cm=cm, epoch=dnn_iter, batch_size=self.batch_size
@@ -152,11 +153,6 @@ class Model:
         logger.info("\rEvaluation...")
         z_som_test = self.transfer(self.som.get_distances(self.x_test, batch_size=self.batch_size))
         z_som_stm = self.transfer(self.som.get_distances(r_samples, batch_size=self.batch_size))
-        # _, _, confusion_matrix = self.dnn.train(
-        #     z_som_stm, r_labels, z_som_test, self.t_test,
-        #     cm=True, epoch=dnn_iter, batch_size=self.batch_size
-        # )
-        # confusion_matrices.append(confusion_matrix[0])
         loss, accuracy = self.dnn.evaluate(z_som_test, self.t_test, verbose=1)
         if self.stm.max_size > 0:
             self.fill_stm(r_samples, z_som_stm, r_labels)
