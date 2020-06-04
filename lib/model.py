@@ -5,6 +5,7 @@ import logging
 import shutil
 from math import exp
 import numpy as np
+from scipy.stats import norm
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
 from tqdm import trange
@@ -12,6 +13,7 @@ from lib.bqueue import Bqueue
 from lib.dnn import Dnn
 from lib.helper import Helper
 from lib.som import SOM
+import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Model")
@@ -71,7 +73,7 @@ class Model:
         logger.info("\rFilling STM")
         loss, acc = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
         acc = np.array(acc).astype("float32")
-        stm_idx = np.argwhere(acc > 0.9).ravel()
+        stm_idx = np.argwhere(acc > 0.5).ravel()
         if stm_idx.shape[0] == 0:
             correct_samples, correct_labels = Helper.get_random_samples(
                 samples, labels, self.limit
@@ -125,7 +127,7 @@ class Model:
                 wrong_idx = np.argwhere(np.greater(np.array(loss), ce)).ravel()
                 if wrong_idx.shape[0] > 0:
                     mask = np.isin(np.argmax(t[i][wrong_idx], axis=1), new_labels)
-                    new_wrong_samples = np.repeat(x[i][wrong_idx][mask], 5, axis=0)
+                    new_wrong_samples = x[i][wrong_idx][mask]
                     self.som.train(
                         new_wrong_samples, learning_rate=som_lr * decay,
                         radius=som_rad * decay, global_order=self.batch_size
