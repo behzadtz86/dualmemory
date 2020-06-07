@@ -5,7 +5,7 @@ import logging
 import shutil
 from math import exp
 import numpy as np
-from sklearn.preprocessing import StandardScaler, quantile_transform
+from sklearn.preprocessing import StandardScaler, normalize
 from sklearn.utils import shuffle
 from tqdm import trange
 from lib.bqueue import Bqueue
@@ -35,8 +35,12 @@ class Model:
         self.stm = Bqueue(max_size=stm)
         self.limit = limit
         self.scaler = StandardScaler()
+        self.max = 1.0
 
-    def transfer(self, dist):
+    def transfer(self, dist, test=False):
+        if self.max < np.max(dist) and not test:
+            self.max = np.max(dist)
+        dist /= self.max
         return self.scaler.fit_transform(dist)
 
     @staticmethod
@@ -71,14 +75,9 @@ class Model:
         logger.info("\rFilling STM")
         loss, _ = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
         loss = np.array(loss).astype("float32")
-        stm_idx = np.argwhere(loss > 0.001).ravel()
-        if stm_idx.shape[0] == 0:
-            wrong_samples, wrong_labels = Helper.get_random_samples(
-                samples, labels, self.limit
-            )
-        else:
-            wrong_samples = samples[stm_idx]
-            wrong_labels = labels[stm_idx]
+        stm_idx = np.argsort(loss)[::-1]
+        wrong_samples = samples[stm_idx]
+        wrong_labels = labels[stm_idx]
         for s in range(self.class_num):
             class_idx = np.argwhere(np.argmax(wrong_labels, axis=1) == s).ravel()
             loop_iter = min(self.stm.max_size // self.class_num, class_idx.shape[0])
@@ -96,7 +95,6 @@ class Model:
         logger.info("\r".center(terminal_columns, "="))
         confusion_matrices = []
         sigma = []
-        d_acc = 0.0
         r_samples = None
         r_labels = None
         if sub_task > 1 and self.stm.max_size > 0:
@@ -114,11 +112,12 @@ class Model:
             x, t = Helper.generate_batches(r_samples, r_labels, self.batch_size)
             sigma = []
             confusion_matrices = []
-            cm_list = range(len(x))
+            # cm_list = range(len(x))
+            cm_list = [0, len(x) - 1]
             pbar = trange(len(x))
             d_counter = 0
             for i in pbar:
-                z_som = self.transfer(self.som.get_distances(x[i]))
+                z_som = self.transfer(self.som.get_distances(x[i]), test=True)
                 loss, acc = self.dnn.evaluate(z_som, t[i], verbose=0)
                 loss = np.array(loss)
                 wrong_idx = np.argwhere(np.greater(np.array(loss), ce)).ravel()
@@ -136,7 +135,7 @@ class Model:
                     self.som.get_distances(x[i], batch_size=self.batch_size)
                 )
                 z_som_test = self.transfer(
-                    self.som.get_distances(self.x_test, batch_size=self.batch_size)
+                    self.som.get_distances(self.x_test, batch_size=self.batch_size), test=True
                 )
                 cm = i in cm_list
                 d_loss, d_acc, confusion_matrix = self.dnn.train(
@@ -155,9 +154,9 @@ class Model:
                 )
                 pbar.refresh()
         logger.info("\rEvaluation...")
-        z_som_test = self.transfer(self.som.get_distances(self.x_test, batch_size=self.batch_size))
-        z_som_stm = self.transfer(self.som.get_distances(r_samples, batch_size=self.batch_size))
+        z_som_test = self.transfer(self.som.get_distances(self.x_test, batch_size=self.batch_size), test=True)
+        z_som_stm = self.transfer(self.som.get_distances(r_samples, batch_size=self.batch_size), test=True)
         loss, accuracy = self.dnn.evaluate(z_som_test, self.t_test, verbose=1)
         if self.stm.max_size > 0:
             self.fill_stm(r_samples, z_som_stm, r_labels)
-        return accuracy, np.array(sigma), [confusion_matrices[0], confusion_matrices[-1]]
+        return accuracy, np.array(sigma), confusion_matrices
