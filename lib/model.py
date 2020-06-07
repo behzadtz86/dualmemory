@@ -40,10 +40,7 @@ class Model:
     def transfer(self, dist, test=False):
         if self.max < np.max(dist) and not test:
             self.max = np.max(dist)
-            dist /= self.max
-            dist[dist < 0.5] = 0.0
-        else:
-            dist /= self.max
+        dist /= self.max
         return self.scaler.fit_transform(dist)
 
     @staticmethod
