@@ -40,7 +40,10 @@ class Model:
     def transfer(self, dist, test=False):
         if self.max < np.max(dist) and not test:
             self.max = np.max(dist)
-        dist /= self.max
+            dist /= self.max
+            dist[dist < 0.5] = 0.0
+        else:
+            dist /= self.max
         return self.scaler.fit_transform(dist)
 
     @staticmethod
@@ -73,17 +76,17 @@ class Model:
 
     def fill_stm(self, samples, z_som, labels):
         logger.info("\rFilling STM")
-        loss, _ = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
-        loss = np.array(loss).astype("float32")
-        stm_idx = np.argsort(loss)[::-1]
-        wrong_samples = samples[stm_idx]
-        wrong_labels = labels[stm_idx]
+        _, acc = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
+        acc = np.array(acc).astype("float32")
+        stm_idx = np.argsort(acc)[::-1]
+        correct_samples = samples[stm_idx]
+        correct_labels = labels[stm_idx]
         for s in range(self.class_num):
-            class_idx = np.argwhere(np.argmax(wrong_labels, axis=1) == s).ravel()
+            class_idx = np.argwhere(np.argmax(correct_labels, axis=1) == s).ravel()
             loop_iter = min(self.stm.max_size // self.class_num, class_idx.shape[0])
             for i in range(loop_iter):
                 self.stm.push(
-                    (wrong_samples[class_idx[i]], wrong_labels[class_idx[i]])
+                    (correct_samples[class_idx[i]], correct_labels[class_idx[i]])
                 )
 
     def train(
