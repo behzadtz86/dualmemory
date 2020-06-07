@@ -75,15 +75,17 @@ class Model:
         logger.info("\rFilling STM")
         _, acc = self.dnn.evaluate(z_som, labels, batch_size=1, verbose=0)
         acc = np.array(acc).astype("float32")
-        stm_idx = np.argsort(acc)[::-1]
-        correct_samples = samples[stm_idx]
-        correct_labels = labels[stm_idx]
+        stm_idx = np.argwhere(acc > 0.5).ravel()
         for s in range(self.class_num):
-            class_idx = np.argwhere(np.argmax(correct_labels, axis=1) == s).ravel()
+            class_idx = np.argwhere(np.argmax(labels[stm_idx], axis=1) == s).ravel()
+            np.random.shuffle(class_idx)
+            class_samples = samples[class_idx]
+            class_labels = labels[class_idx]
+            class_samples, class_labels = shuffle(class_samples, class_labels)
             loop_iter = min(self.stm.max_size // self.class_num, class_idx.shape[0])
             for i in range(loop_iter):
                 self.stm.push(
-                    (correct_samples[class_idx[i]], correct_labels[class_idx[i]])
+                    (class_samples[i], class_labels[i])
                 )
 
     def train(
@@ -111,6 +113,7 @@ class Model:
             new_labels = np.unique(np.argmax(labels, axis=1))
             x, t = Helper.generate_batches(r_samples, r_labels, self.batch_size)
             sigma = []
+            d_acc = 0.0
             confusion_matrices = []
             # cm_list = range(len(x))
             cm_list = [0, len(x) - 1]
@@ -131,21 +134,21 @@ class Model:
                         new_wrong_samples, learning_rate=som_lr * decay,
                         radius=som_rad * decay, global_order=self.batch_size
                     )
-                z_som = self.transfer(
-                    self.som.get_distances(x[i], batch_size=self.batch_size)
-                )
-                z_som_test = self.transfer(
-                    self.som.get_distances(self.x_test, batch_size=self.batch_size), test=True
-                )
-                cm = i in cm_list
-                d_loss, d_acc, confusion_matrix = self.dnn.train(
-                    z_som, t[i], z_som_test, self.t_test,
-                    cm=cm, epoch=dnn_iter, batch_size=self.batch_size
-                )
-                if len(confusion_matrix) > 0:
-                    for m in confusion_matrix:
-                        confusion_matrices.append(m)
-                d_acc = np.mean(np.array(d_acc).astype("float32"))
+                    z_som = self.transfer(
+                        self.som.get_distances(x[i], batch_size=self.batch_size)
+                    )
+                    z_som_test = self.transfer(
+                        self.som.get_distances(self.x_test, batch_size=self.batch_size), test=True
+                    )
+                    cm = i in cm_list
+                    d_loss, d_acc, confusion_matrix = self.dnn.train(
+                        z_som, t[i], z_som_test, self.t_test,
+                        cm=cm, epoch=dnn_iter, batch_size=self.batch_size
+                    )
+                    if len(confusion_matrix) > 0:
+                        for m in confusion_matrix:
+                            confusion_matrices.append(m)
+                    d_acc = np.mean(np.array(d_acc).astype("float32"))
                 pbar.set_description(
                     f"Epoch{ep + 1}/{epoch}"
                     f"|Batch:{i + 1}/{len(x)}"
