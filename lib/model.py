@@ -1,6 +1,7 @@
 __author__ = "Behzad Taghipour Zarfsaz"
 __email__ = "behzad.taghipour-zarfsaz@informatik.hs-fulda.de"
 
+import copy
 import logging
 import shutil
 from math import exp
@@ -115,7 +116,6 @@ class Model:
             sigma = []
             d_acc = 0.0
             cm_list = range(len(x))
-            cm_list = [0, len(x) - 1]
             pbar = trange(len(x))
             d_counter = 0
             for i in pbar:
@@ -148,6 +148,8 @@ class Model:
                         for m in confusion_matrix:
                             confusion_matrices.append(m)
                     d_acc = np.mean(np.array(d_acc).astype("float32"))
+                else:
+                    confusion_matrices.append(copy.copy(confusion_matrices[-1]))
                 pbar.set_description(
                     f"Epoch{ep + 1}/{epoch}"
                     f"|Batch:{i + 1}/{len(x)}"
@@ -161,4 +163,4 @@ class Model:
         loss, accuracy = self.dnn.evaluate(z_som_test, self.t_test, verbose=1)
         if self.stm.max_size > 0:
             self.fill_stm(r_samples, z_som_stm, r_labels)
-        return accuracy, np.array(sigma), [confusion_matrices[0], confusion_matrices[-1]]
+        return accuracy, np.array(sigma), confusion_matrices

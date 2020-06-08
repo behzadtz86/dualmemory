@@ -51,7 +51,7 @@ example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.0 --lr 0.5,0.
 
 <tr>
   <td>--ce</td>
-  <td>float (default=0.8)</td>
+  <td>float (default=0.2)</td>
  <td>Cross-Entropy threshold value.</td>
 </tr>
 

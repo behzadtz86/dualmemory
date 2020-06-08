@@ -239,7 +239,7 @@ class Plotter:
         ax.grid(True)
         corrects = []
         for cm in cm_list:
-            corrects.append(cm[1].diagonal())
+            corrects.append(cm.diagonal())
         corrects = np.array(corrects).astype("int32")
         x = list(range(0, corrects.shape[0], 10))
         x.append(corrects.shape[0] - 1)
@@ -247,11 +247,11 @@ class Plotter:
         for s in classes:
             y = corrects[:, s][x]
             t, c, k = interpolate.splrep(x, y, s=0, k=4)
-            x_smooth = np.linspace(x.min(), x.max(), 100)
+            x_smooth = np.linspace(x.min(), x.max(), len(cm_list))
             spline = interpolate.BSpline(t, c, k, extrapolate=False)
-            plt.plot(x_smooth, spline(x_smooth), linewidth=3, label=f"Class {s}")
-        ax.set_xlabel('Batch Number')
-        ax.set_ylabel('Correct Predicts')
+            syy = spline(x_smooth)
+            syy[syy < 5] = 0.0
+            plt.plot(x_smooth, syy, linewidth=2, label=f"Class {s}")
         ax.legend()
         return plt
 

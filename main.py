@@ -47,7 +47,7 @@ parser.add_option("--d5", dest="d5",
 parser.add_option("--limit", dest="limit",
                   help="Limiting the number of samples for each class. ", default=1000, type=int)
 parser.add_option("--ce", dest="ce",
-                  help="Threshold cross-entropy. ", default=0.8, type=float)
+                  help="Threshold cross-entropy. ", default=0.2, type=float)
 parser.add_option("--stm", dest="stm",
                   help="Short-term memory size. ", default=100, type=int)
 parser.add_option("--image_path", dest="img_path",
@@ -100,6 +100,7 @@ if __name__ == "__main__":
         som_labels = []
         sigma = []
         confusion_matrices = []
+        fl_matrices = []
         for num, sub_set in enumerate(sub_sets):
             if num > 0:
                 samples_so_far = np.concatenate([samples_so_far, sub_set['samples']])
@@ -117,8 +118,11 @@ if __name__ == "__main__":
             # ================ Collecting Plot Data =================
             accuracy_values.append(accuracy)
             sigma.append(c_sigma)
-            for i, c in enumerate(c_matrices):
-                confusion_matrices.append((f"D{num + 1}|CM{i + 1}", c))
+            for c in c_matrices:
+                confusion_matrices.append(c)
+
+            fl_matrices.append((f"D{num + 1}|CM{1}", c_matrices[0]))
+            fl_matrices.append((f"D{num + 1}|CM{2}", c_matrices[-1]))
 
             soms.append(copy.copy(model.som))
             som_rs, som_rt = Helper.get_random_samples(samples_so_far, labels_so_far, 1000)
@@ -128,9 +132,9 @@ if __name__ == "__main__":
         # ================== Plotting Sigma Decay ====================
         Plotter.plot_sigma(sigma)
         # ============== Plotting Confusion Matrices =================
-        for cm in confusion_matrices:
+        for cm in fl_matrices:
             Plotter.plot_cm(cm)
-        # Plotter.plot_cm_diagram(confusion_matrices, [0, 2, 4, 6, 8])
+        Plotter.plot_cm_diagram(confusion_matrices)
         # ===================== Plotting SOM's =======================
         if options.plot_som:
             # Plotter(28, 28).plot_som_changes(soms, som_samples, som_labels)
