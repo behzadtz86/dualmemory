@@ -114,8 +114,7 @@ class Model:
             x, t = Helper.generate_batches(r_samples, r_labels, self.batch_size)
             sigma = []
             d_acc = 0.0
-            confusion_matrices = []
-            # cm_list = range(len(x))
+            cm_list = range(len(x))
             cm_list = [0, len(x) - 1]
             pbar = trange(len(x))
             d_counter = 0
@@ -162,4 +161,4 @@ class Model:
         loss, accuracy = self.dnn.evaluate(z_som_test, self.t_test, verbose=1)
         if self.stm.max_size > 0:
             self.fill_stm(r_samples, z_som_stm, r_labels)
-        return accuracy, np.array(sigma), confusion_matrices
+        return accuracy, np.array(sigma), [confusion_matrices[0], confusion_matrices[-1]]
