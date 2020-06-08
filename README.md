@@ -44,6 +44,18 @@ example 2: `--d1 0,1,2,3,4,5,6,7,8 --d2 9 --batch 100 --radius 5,1.0 --lr 0.5,0.
 </tr>
 
 <tr>
+  <td>--epoch</td>
+  <td>str (default='1,1,1,1,1')</td>
+ <td>Number of epochs for each sub-task (separated for tasks by ',').</td>
+</tr>
+
+<tr>
+  <td>--ce</td>
+  <td>float (default=0.8)</td>
+ <td>Cross-Entropy threshold value.</td>
+</tr>
+
+<tr>
   <td>--d1</td>
   <td>str (default=None)</td>
   <td>The list of classes for training in sub-task 1 (separated by ',').</td>
